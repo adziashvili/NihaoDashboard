@@ -1,0 +1,69 @@
+html,body{
+    height: 100%;
+}
+
+.bg-color-nihao{
+    background-color: #40ccff;
+}
+
+.fg-color-nihao{
+    color: #40ccff;
+}
+
+.bg-color-up{
+    background-color: #64c841;
+}
+
+.text-growing{
+    color: #64c841;
+}
+
+.text-stable{
+    color: #c8c634;
+}
+
+.vertical-center {
+    margin: 10px auto;
+    color: white;
+}
+
+.padd-bottom {
+    padding-bottom: 50px;
+}
+
+.icon-idle {
+    color: lightgray;
+}
+
+.icon-sm {
+    font-size: 1em;
+}
+
+.icon-med {
+    font-size: 4em;
+}
+
+.icon-lg {
+    font-size: 5em;
+}
+
+.icon-header {
+    font-size: 4em;
+    color: grey;
+}
+
+.pull-top{
+    display: inline-block;
+    vertical-align: top;
+    float: none;
+}
+
+.line-half {
+    width: 50%;
+}
+
+.glyphicon-border-nihao {
+    text-shadow: -1px 0 #40ccff, 0 1px #40ccff, 1px 0 #40ccff, 0 -1px #40ccff;
+}
+
+

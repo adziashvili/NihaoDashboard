@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="img/favicon-nihao.png">
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <script src="js/jq.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="js/jszip.js"></script>
+    <script src="js/xlsx.js"></script>
+    <script src="js/charts.js"></script>
+
+    <script src="js/nihao.js"></script>
+    <script src="js/dashboard.js"></script>
+
+    <title>Nihao Analytics</title>
+
+</head>
+
+
+<body onload="dashboardOnloadHandler();">
+
+<!-- MAIN HEADER MENU -->
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">DASHBOARD</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="#">ACCOUNT</a></li>
+            <li><a href="#">ACTIVITY</a></li>
+            <li><a href="#">CUSTOMERS</a></li>
+            <li><a href="#">PRODUCTS</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- SUB-MENU -->
+<div id="btn_locations" class="container">
+
+    <div class="row padd-bottom">
+
+        <div id="summary_title_placeholder" class="col-lg-4">
+
+        </div>
+
+        <div class="col-lg-4">
+
+
+        </div>
+
+        <div class="col-lg-4 text-right">
+
+            <span id="loadReport" class="btn btn-default hidden">PROCESS</span>
+
+            <a href="#" class="btn btn-default"
+               data-toggle="modal"
+               data-target="#myModal">
+                <span class="glyphicon glyphicon-upload"></span> UPLOAD DATA
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MAIN GIRD FOR ALL CONTENT-->
+<div id="top_summary" class="container">
+
+    <!-- ACCOUNT SUMMARY -->
+    <div class="row">
+
+        <div class="col-lg-4">
+            <ul id="location_periods" class="list-group"></ul>
+        </div>
+
+        <div class="col-lg-4">
+
+        </div>
+
+        <div class="col-lg-4">
+
+        </div>
+    </div>
+
+    <!-- PLACEHOLDER ACCOUNT MAIN METRIC INDICATORS -->
+    <div id="top_summary_headers" class="row padd-bottom">
+
+    </div>
+
+    <!-- PLACEHOLDER ACCOUNT MAIN CHARTS -->
+    <div id="top_summary_charts" class="row">
+
+        <div class="col-lg-4 padd-bottom">
+            <canvas id="account_sessions_chart"></canvas>
+        </div>
+
+        <div class="col-lg-4">
+            <canvas id="account_customers_chart"></canvas>
+        </div>
+
+        <div class="col-lg-4">
+            <canvas id="account_products_chart"></canvas>
+        </div>
+    </div>
+
+    <!-- FEATURES USE GRAPH -->
+    <div id="product_usage" class="row padd-bottom">
+
+        <div class="col-lg-12">
+            <button id="showFeatures" type="button" class="btn btn-default hidden" data-toggle="collapse"
+                    data-target="#features_chart">ShowFeatures Usage
+            </button>
+            <div id="features_chart" class="collapse">
+                <canvas id="product_usage_chart_left" height="75"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row padd-bottom">
+
+        <div class="col-lg-4 padd-bottom">
+            <ul id="locations_listing" class="list-group"></ul>
+        </div>
+
+        <div class="col-lg-4">
+            <ul id="customer_listing" class="list-group"></ul>
+        </div>
+
+        <div class="col-lg-4">
+
+            <ul id="product_listing" class="list-group"></ul>
+
+            <!--ul id="sample" class="list-group">
+                <li class="list-group-item">
+                    <span>Total Sessions</span>
+                    <span class="badge">1270</span>
+                    <span class="badge bg-color-up">+50%</span>
+                </li>
+            </ul-->
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ---------- -->
+<!-- COMPONENTS -->
+<!-- ---------- -->
+
+<!-- MODAL -->
+<div id="myModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Upload Data</h4>
+            </div>
+
+            <div class="modal-body">
+                <p>Upload your statistics file: </p>
+                <input type="file" id="files" value="SELECT">
+                <div class="well-lg"><span id="source"></span></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">CANCEL</button>
+                <button id="process" type="button" class="btn btn-success hidden" data-dismiss="modal">OK</button>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+    $('#loadReport').on('click', function () {
+
+        // Init the dashboard data
+        account = new AccountData(db);
+
+        // Adding Title
+        addTitleSummary("summary_title_placeholder");
+
+        addAccountSummarySection(
+                "top_summary_headers",
+                "glyphicon-signal glyphicon-border-nihao",
+                "Usage",
+                account.sentiments[0][0],   // Sentiment
+                account.sentiments[0][1],   // Class
+                account.sentiments[0][2]);  // Hint
+
+        addAccountSummarySection(
+                "top_summary_headers",
+                "glyphicon-user glyphicon-border-nihao",
+                "Leads",
+                account.customers.sentiments[0][0],   // Sentiment
+                account.customers.sentiments[0][1],   // Class
+                account.customers.sentiments[0][2]);  // Hint
+
+        addAccountSummarySection(
+                "top_summary_headers",
+                "glyphicon-sunglasses glyphicon-border-nihao",
+                "Products",
+                account.sentiments[1][0],   // Sentiment
+                account.sentiments[1][1],   // Class
+                account.sentiments[1][2]);  // Hint
+
+        addProductCharts("product_usage_chart_left", "product_usage_chart_right");
+        $('#showFeatures').removeClass("hidden");
+
+        var periods = account.periodLabels.slice().reverse();
+
+        drawLineChart("account_sessions_chart",
+                "Avg. Sessions / Day",
+                suffix(periods, "d", true),
+                account.getStats(periods, PERIOD_METRICS.AVG_T1, PERIOD_METRICS.GROUP_SESSION));
+
+        periods = account.customers.periodLabels.slice().reverse();
+
+        drawLineChart("account_customers_chart",
+                "Avg. Customers / Day",
+                suffix(periods, "d", true),
+                account.customers.getStats(periods, PERIOD_METRICS.AVG_T1, PERIOD_METRICS.GROUP_SESSION));
+
+        drawLineChart("account_products_chart",
+                "Avg. Products Presented / Day",
+                suffix(periods, "d", true),
+                account.getStats(periods, PERIOD_METRICS.AVG_T1, PERIOD_METRICS.GROUP_PRODUCT));
+
+        // Adding summary sessions by location
+        addListBadge(
+                $('#locations_listing'),
+                "locations_listing_all",
+                "SALES SESSIONS CONDUCTED",
+                account.sessions.length(),
+                "list-group-item-info"
+        );
+
+        account.locations.all().forEach(function (location, index) {
+            addListBadge(
+                    $('#locations_listing'),
+                    "location_sessions" + index,
+                    location.name,
+                    location.sessions.length);
+        });
+
+        // Adding summary Customers by location
+        addListBadge(
+                $('#customer_listing'),
+                "customer_listing_all",
+                "CUSTOMER CONTACTS COLLECTED",
+                account.customers.length(),
+                "list-group-item-info"
+        );
+
+        account.locations.all().forEach(function (location, index) {
+            addListBadge(
+                    $('#customer_listing'),
+                    "location_customer" + index,
+                    location.name,
+                    location.customers.length);
+        });
+
+        // Adding summary products by location for account
+        addListBadge(
+                $('#product_listing'),
+                "product_listing_all",
+                "PRODUCTS PRESENTED",
+                account.locations.productsPresented(), // PRODUCTS???
+                "list-group-item-info"
+        );
+
+        account.locations.all().forEach(function (location, index) {
+            addListBadge(
+                    $('#product_listing'),
+                    "location_products" + index,
+                    location.name,
+                    location.productsPresented); // PRODUCTS COUNT
+        });
+
+        // Build the section for each location
+        account.locations.all().forEach(function (location) {
+
+            buildLocationGrid(location);    // Builds location DOM structure
+
+            var periods = location.periodLabels.slice().reverse();
+
+            drawBarChart(location.id + "_CANVAS_0",
+                    "Sessions Per Day",
+                    suffix(periods, "d", true),
+                    location.getStats(periods, PERIOD_METRICS.AVG_T1, PERIOD_METRICS.GROUP_SESSION));
+
+            drawBarChartSeries(
+                    location.id + "_CANVAS_1",
+                    suffix(periods, "d", true),
+                    "Previous Period",
+                    location.getStats(periods, PERIOD_METRICS.TOTAL_T0, PERIOD_METRICS.GROUP_SESSION),
+                    "Total Sessions",
+                    location.getStats(periods, PERIOD_METRICS.TOTAL_T1, PERIOD_METRICS.GROUP_SESSION));
+
+            drawBarChart(location.id + "_CANVAS_2",
+                    "Session Count Change %",
+                    suffix(periods, "d", true),
+                    location.getStats(periods, PERIOD_METRICS.T1_TO_T0_CHANGE, PERIOD_METRICS.GROUP_SESSION));
+
+        });
+    });
+
+</script>
+
+</body>
+</html>
