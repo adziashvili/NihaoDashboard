@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Nihao Dashboard.iml" filepath="$PROJECT_DIR$/.idea/Nihao Dashboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/NihaoDashboard.iml" filepath="$PROJECT_DIR$/.idea/NihaoDashboard.iml" />
     </modules>
   </component>
 </project>
