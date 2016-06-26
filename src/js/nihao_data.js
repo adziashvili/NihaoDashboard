@@ -5,11 +5,10 @@
 /**
  * GLOBALS.
  */
-
 var account;
 
 /**
- * Periods to evaluate perfromance for
+ * Periods to evaluate performance for
  * @type {number[]} The periods
  */
 var GLOBAL_PERIODS = [7, 15, 30, 60, 90];
@@ -24,27 +23,23 @@ var PeriodMetrics = function () {
     this.TOTAL_T1        = 1;
     this.AVG_T1          = 2;
     this.TOTAL_T0        = 3;
+    //noinspection JSUnusedGlobalSymbols
     this.AVG_T0          = 4;
     this.T1_TO_T0_CHANGE = 5;
 
     this.GROUP_SESSION = "SESSIONS";
     this.GROUP_PRODUCT = "PRODUCTS";
-
 };
 
 var PERIOD_METRICS = new PeriodMetrics();
 
-var PerfromanceMetrics = function () {
+var PerformanceMetrics = function () {
     this.AVG_SESSION_PER_STORE  = 1;
     this.AVG_CUSTOMER_PER_STORE = 2;
     this.GROWTH                 = 3;
 };
 
-var PERFORMANCE_METRICS = new PerfromanceMetrics();
-
-function isEmptyObject(obj) {
-    return Object.keys(obj).length === 0 && obj.constructor === Object;
-}
+var PERFORMANCE_METRICS = new PerformanceMetrics();
 
 /**
  * METRICS
@@ -109,8 +104,8 @@ function evaluatePeriod(arrayOfObjects, period, metricEval, bCompareToPrevious) 
 
     bCompareToPrevious = typeof bCompareToPrevious !== 'undefined' ? bCompareToPrevious : false;
 
-    var today         = new Date();
-    var periodStatsT1 = [];
+    var today = new Date();
+    var periodStatsT1;
 
     periodStatsT1 = arrayOfObjects.filter(function (obj) {
         return daysBetween(today, obj.date) <= period;
@@ -142,13 +137,9 @@ function evaluatePeriod(arrayOfObjects, period, metricEval, bCompareToPrevious) 
         metricT0.metric,
         metricT0.avg.toFixed(2),
         changeRatio.toFixed(2),
-        "SOMENAME"
+        "SOME_NAME"
     ];
 }
-
-/**
- * CLASSES
- */
 
 var Evaluator = function () {
 
@@ -228,23 +219,23 @@ var Evaluator = function () {
     };
 
     /**
-     * Evaluates the session perfromance metric.
+     * Evaluates the session performance metric.
      * @param evalObj
      * @param evaluationPeriods
      * @param locCount
      * @returns {{hint: string, sentiment: *, sentimentClass: string}}
      */
-    function evaluateSessionPerformance(evalObj, evaluationPeriods, locCount) {
+    this.evaluateSessionPerformance =  function (evalObj, evaluationPeriods, locCount) {
 
-        var avgs = evalObj.getStats(
+        var averages = evalObj.getStats(
             evaluationPeriods,
             PERIOD_METRICS.AVG_T1,
             PERIOD_METRICS.GROUP_SESSION);
 
-        avgs [0] = (1.0 * avgs [0]) / locCount;      // Normalise to Metrics
-        avgs [1] = (1.0 * avgs [1]) / locCount;      // Normalise to Metrics
+        averages [0] = (1.0 * averages [0]) / locCount;      // Normalise to Metrics
+        averages [1] = (1.0 * averages [1]) / locCount;      // Normalise to Metrics
 
-        var diff = avgs [0] / avgs [1];
+        var diff = averages [0] / averages [1];
         var hint = "";
 
         if (diff > 1) {
@@ -263,7 +254,7 @@ var Evaluator = function () {
 
         diff = diff * 100.0;
 
-        var volumeScale = this.getScale(PERFORMANCE_METRICS.AVG_SESSION_PER_STORE, avgs[0]);
+        var volumeScale = this.getScale(PERFORMANCE_METRICS.AVG_SESSION_PER_STORE, averages[0]);
         var growthScale = this.getScale(PERFORMANCE_METRICS.GROWTH, diff);
 
         //var sentiment = volumeScale.assessment + " and " + growthScale.assessment;
@@ -293,26 +284,26 @@ var Evaluator = function () {
 
         }
         return {hint: hint, sentiment: sentiment, sentimentClass: sentimentClass};
-    }
+    };
 
     /**
-     * Evaluate the perfromance of product presentations for the respective holding object, evalObj
+     * Evaluate the performance of product presentations for the respective holding object, evalObj
      * @param evalObj
      * @param evaluationPeriods
      * @param locCount
      * @returns {{hint: string, sentiment: string, sentimentClass: *}}
      */
-    function evaluateProductPerformance(evalObj, evaluationPeriods, locCount) {
+    this.evaluateProductPerformance =  function (evalObj, evaluationPeriods, locCount) {
 
-        var avgs = evalObj.getStats(
+        var averages = evalObj.getStats(
             evaluationPeriods,
             PERIOD_METRICS.AVG_T1,
             PERIOD_METRICS.GROUP_PRODUCT);
 
-        avgs [0] = (1.0 * avgs [0]) / locCount;      // Normalise to Metrics
-        avgs [1] = (1.0 * avgs [1]) / locCount;      // Normalise to Metrics
+        averages [0] = (1.0 * averages [0]) / locCount;      // Normalise to Metrics
+        averages [1] = (1.0 * averages [1]) / locCount;      // Normalise to Metrics
 
-        var diff = avgs [0] / avgs [1];
+        var diff = averages [0] / averages [1];
         var hint = "";
 
         if (diff > 1) {
@@ -352,7 +343,7 @@ var Evaluator = function () {
         }
 
         return {hint: hint, sentiment: growthScale.assessment, sentimentClass: sentimentClass};
-    }
+    };
 
     /**
      * Evaluates the <code>evalObj</code> for its performance for sessions and products.
@@ -370,72 +361,20 @@ var Evaluator = function () {
         var evaluationPeriods = [evalObj.periodLabels[0], evalObj.periodLabels[EVALUATION_REF_PERIOD]];
 
         // 1. Evaluate session based performance
-        var evaluation = evaluateSessionPerformance.call(this, evalObj, evaluationPeriods, locCount);
+        var evaluation = this.evaluateSessionPerformance(evalObj, evaluationPeriods, locCount);
         evalObj.sentiments.push([evaluation.sentiment, evaluation.sentimentClass, evaluation.hint]);
 
         // 2. Evaluate session based performance
-        evaluation = evaluateProductPerformance.call(this, evalObj, evaluationPeriods, locCount);
+        evaluation = this.evaluateProductPerformance(evalObj, evaluationPeriods, locCount);
         evalObj.sentiments.push([evaluation.sentiment, evaluation.sentimentClass, evaluation.hint]);
     };
 };
 
 var evaluator = new Evaluator();
 
-/**
- * AccountData holds all key Nihao objects.
- * @param db Data to be processed
- * @constructor Reads the data from <code>db</code> and processes it.
- */
-var AccountData = function (db) {
-
-    this.emails    = new Emails(db["Emails"]);
-    this.sessions  = new Sessions(db["Sessions"]);
-    this.locations = new Locations(this.sessions);
-    this.customers = new Customers(this.sessions, this.locations.length());
-
-    this.periodLabels = GLOBAL_PERIODS;
-    this.periodStats  = new Array(this.periodLabels.length);
-
-    this.sentiments = [];
-
-    this.analyse = function () {
-        this.periodStats = evaluatePeriods(this.sessions.all(), this.periodLabels, true);
-    };
-
-    this.evaluate = function () {
-        evaluator.evaluate(this, this.locations.length());
-    };
-
-    /*
-     Gets total sessions for a relevant periods
-     */
-    this.getStats = function (periods, metric, metric_group) {
-
-        var sessions = [];
-
-        for (var i = 0; i < periods.length; i++) {
-
-            var val = 0;
-
-            for (var j = 0; j < this.periodStats.length; j++) {
-                if (this.periodStats[j][0] === periods[i] && this.periodStats[j][6] === metric_group) {
-                    val += this.periodStats[j][metric];
-                }
-            }
-
-            sessions.push(val);
-        }
-
-        return sessions;
-    };
-
-    this.analyse();
-    this.evaluate();
-};
-
-/*
- SESSIONS
- */
+/* ---------------------------------------------------------------------------------------------
+ Data Objects
+/* --------------------------------------------------------------------------------------------- */
 
 /**
  *
@@ -486,12 +425,14 @@ var SessionStats = function (sessions) {
         }
     };
 
+    //noinspection JSUnusedGlobalSymbols
     /**
      *
      * @param feature
      */
     this.getFeatureRatio = function (feature) {
 
+        var ratio =0;
         var index = -1;
 
         for (var i = 0; i < this.stats.length; i++) {
@@ -502,10 +443,10 @@ var SessionStats = function (sessions) {
         }
 
         if (-1 !== index) {
-            this.stats[index].ratio;
+            ratio = this.stats[index].ratio;
         }
 
-        return 0;
+        return ratio;
     };
 
     /**
@@ -595,12 +536,8 @@ var SessionStats = function (sessions) {
 
         var totalSessions = sessions.length;
 
-        var score = function () {
-
-        };
-
-        for (var i = 0; i < this.stats.length; i++) {
-            this.stats[i].ratio = ((1.0 * this.stats[i].total) / totalSessions);
+        for (var j = 0; j < this.stats.length; j++) {
+            this.stats[j].ratio = this.stats[j].total / totalSessions;
         }
 
     };
@@ -614,6 +551,7 @@ var Session = function (session) {
     this.location    = session["Location"];
     this.date        = new Date(session["Date / Time"]);
     this.duration    = session["Session Duration (min)"] * 1.0;
+    //noinspection JSUnusedGlobalSymbols
     this.netDuration = session["Net Presentation Time (min)"] * 1.0;
     this.associate   = session["Sales Associate"];
     this.customer    = new Customer(session);
@@ -636,60 +574,33 @@ var Session = function (session) {
     this.audio        = session["Audio used"] === "YES";
     this.closureEvent = session["Ended Due To"];
     this.emailsSent   = this.emails.length;
+    //noinspection JSUnusedGlobalSymbols
     this.deviceId     = session["Device ID"];
     this.os           = session["Device OS"];
-    this.model        = session["Device Model"]
+    //noinspection JSUnusedGlobalSymbols
+    this.model        = session["Device Model"];
+
+    this.equals = function (another) {
+        return this.key() === another.key();
+    };
+
+    this.key = function () {
+        return this.id;
+    };
+
+    this.comparable = function () {
+        return this.date;
+    };
+
+    this.toString = function () {
+        return "Session Id:" + this.key();
+    };
 };
-
-var Sessions = function (data) {
-
-    this.list = [];
-    this.from = null;
-    this.to   = null;
-
-    this.length = function () {
-        return this.list.length
-    };
-
-    this.all = function () {
-        return this.list
-    };
-
-    this.at = function (index) {
-        return this.list[index]
-    };
-
-    for (var i = 0; i < data.length; i++) {
-        var session = new Session(data[i]);
-
-        // filter testing POSs
-        if (session.location === "Itzik - Test") {
-            continue;
-        }
-
-        this.list.push(session);
-
-        if (this.to === null) {
-            this.from = this.to = session.date;
-        }
-
-        if (session.date < this.from) {
-            this.from = session.date;
-        } else if (session.date > this.to) {
-            this.to = session.date;
-        }
-    }
-
-    this.stats = new SessionStats(this.list);
-
-};
-
-/* CUSTOMERS */
 
 var Customer = function (session) {
 
     if (undefined === session) {
-        console.log("ERROR: Expecting valid input. raw_data is underfined.");
+        console.log("ERROR: Expecting valid input. raw_data is undefined.");
         return {};
     }
 
@@ -702,105 +613,47 @@ var Customer = function (session) {
 
     this.id = this.name + this.email + this.contact;
 
+    //noinspection JSUnusedGlobalSymbols
     this.contactable = false; // session["Customer Wiling To Be Contacted"];
+    //noinspection JSUnusedGlobalSymbols
     this.gender      = session["Customer Gender"];
+    //noinspection JSUnusedGlobalSymbols
     this.city        = session["Customer Location"];
     if (session["Customer DOB"] !== "") {
+        //noinspection JSUnusedGlobalSymbols
         this.dob = new Date(session["Customer DOB"]);
     }
     this.language = session["Customer Primary Language"];
+    //noinspection JSUnusedGlobalSymbols
     this.rating   = session["Customer Rating"] * 1;
 
     this.isEmpty = function () {
         return this.name === "" && this.email === "" && this.contact === "";
-    }
+    };
+
+    this.equals = function (another) {
+        return this.key() === another.key();
+    };
+
+    this.key = function () {
+        return this.name + this.email + this.contact;
+    };
+
+    this.comparable = function () {
+        return this.date;
+    };
+
+    this.toString = function () {
+        return "Customer Name:" + this.name + ", Email: " + this.email;
+    };
 };
 
-var Customers = function (sessions, numOfLocations) {
+//noinspection JSUnusedGlobalSymbols
+var Email = function () {};
 
-    this.list = [];
-
-    this.periodLabels = GLOBAL_PERIODS;
-    this.periodStats  = new Array(this.periodLabels.length);
-
-    this.numOfLocations = numOfLocations;
-
-    this.sentiments = [];
-
-    this.length = function () {
-        return this.list.length;
-    };
-    this.all    = function () {
-        return this.list;
-    };
-
-    this.find = function (name, email, contact) {
-
-        var customer = {};
-
-        for (i = 0; i < this.list.length; i++) {
-            var c = this.list[i];
-            if (c.name === name && c.email === email && c.contact === contact)
-                customer = c;
-        }
-
-        return customer;
-    };
-
-    this.init = function (sessions) {
-        for (i = 0; i < sessions.length(); i++) {
-            if (!sessions.at(i).customer.isEmpty()) {
-                this.list.push(sessions.at(i).customer);
-            }
-        }
-    };
-
-    /*
-     Gets total sessions for a relevant periods
-     */
-    this.getStats = function (periods, metric, metric_group) {
-
-        var customerPeriodStats = [];
-
-        for (var i = 0; i < periods.length; i++) {
-
-            var val = 0;
-
-            for (var j = 0; j < this.periodStats.length; j++) {
-                if (this.periodStats[j][0] === periods[i] && this.periodStats[j][6] === metric_group) {
-                    val += this.periodStats[j][metric];
-                }
-            }
-
-            customerPeriodStats.push(val);
-        }
-
-        return customerPeriodStats;
-    };
-
-    /*
-     Processes all data assigned for this object.
-     Use after init();
-     */
-    this.analyse = function () {
-        this.periodStats = evaluatePeriods(this.list, this.periodLabels, true);
-    };
-
-    this.evaluate = function () {
-        evaluator.evaluate(this, this.numOfLocations);
-    };
-
-    this.init(sessions);
-    this.analyse();
-    this.evaluate();
-};
-
-/*
- EMAILS
- */
-var Email = function () {
-};
-
+/* ---------------------------------------------------------------------------------------------
+ Collections
+ /* --------------------------------------------------------------------------------------------- */
 var Emails = function (data) {
 
     this.list = [];
@@ -822,27 +675,271 @@ var Emails = function (data) {
     this.init(data);
 };
 
-/*
- LOCATIONS
+/**
+ * Session collection with built in utility functions
+ * @type {Collection}
  */
+SessionCollection.prototype = new Collection();
+SessionCollection.prototype.constructor = SessionCollection;
+SessionCollection.prototype.getStats    = function (periods, metric, metric_group) {
 
-var Location = function (session) {
+    var sessions = [];
 
-    this.id         = session.location + "_LOC";
-    this.name       = session.location;
-    this.sessions   = [];
+    for (var i = 0; i < periods.length; i++) {
+
+        var val = 0;
+
+        for (var j = 0; j < this.periodStats.length; j++) {
+            if (this.periodStats[j][0] === periods[i] && this.periodStats[j][6] === metric_group) {
+                val += this.periodStats[j][metric];
+            }
+        }
+
+        sessions.push(val);
+    }
+
+    return sessions;
+};
+// SessionCollection.prototype.addBulk             = function (sessions) {
+//
+//     for (var i = 0; i < sessions.length(); i++) {
+//         this.add(sessions[i]);
+//     }
+// };
+// SessionCollection.prototype.getSumProducts      = function () {
+//
+//     var stat = this.calcStat(function (session) {
+//         return session.products;
+//     });
+//
+//     return stat.value;
+// };
+SessionCollection.prototype.toString = function () {
+    return "SessionCollection: size =" + this.size() + " Earliest:" + this.from + " Latest: " + this.to;
+};
+SessionCollection.prototype.analyze  = function () {
+    this.periodStats = evaluatePeriods(this.all(), this.periodLabels, true);
+    this.stats = new SessionStats(this.all());
+    evaluator.evaluate(this, this.locationNames.length);
+};
+SessionCollection.prototype.add      = function (session) {
+
+    // filter testing POSs
+    if (session.location === "Itzik - Test") {
+        return;
+    }
+
+    Collection.prototype.add.call(this, session);
+
+    // Add to the list of locations
+    if (-1 === this.locationNames.indexOf(session.name)) {
+        this.locationNames.push(session.name);
+    }
+
+    // Check to update associates
+    if (-1 === this.associates.indexOf(session.associate)) {
+        this.associates.push(session.associate);
+    }
+
+    // Check to update customer
+    var customerInArray = false;
+
+    for (var i = 0; i < this.customers.length; i++) {
+        if (this.customers[i].id === session.customer.id) {
+            customerInArray = true;
+        }
+    }
+
+    if (!customerInArray) {
+        this.customers.push(session.customer);
+    }
+
+    this.productsPresented += session.products;
+
+    // Update range of dates
+    if (this.from === null) {
+        this.from = session.date;
+    } else if (this.from > session.date) {
+        this.from = session.date;
+    }
+
+    if (this.to === null) {
+        this.to = session.date;
+    } else if (this.to < session.date) {
+        this.to = session.date;
+    }
+};
+
+function SessionCollection() {
+
+    Collection.call(this);
+
+    this.periodLabels = GLOBAL_PERIODS;
+    this.sentiments   = [];
+    this.periodStats  = new Array(this.periodLabels.length);
+
+    // Name of locations reported in sessions
+    this.locationNames = [];
+
+    // Name of associates reported in sessions
     this.associates = [];
-    this.customers  = [];
+
+    // Name of customers serviced in this location
+    this.customers = [];
+
+    // Earliest session in the collection
+    this.from = null;
+
+    // Latest session in the collection
+    this.to = null;
+
+    // Number of products presented
     this.productsPresented = 0;
+
+    // Stats object
+    this.stats = new SessionStats(this.list);
+}
+
+/**
+ * Location is a SessionCollection.
+ *
+ * @type {Collection}
+ */
+Location.prototype = new SessionCollection();
+Location.prototype.constructor = Location;
+Location.prototype.key         = function () {
+    return this.name;
+};
+Location.prototype.comparable  = function () {
+    return this.list.length;
+};
+Location.prototype.toString    = function () {
+    return "Location " + this.name + ". Session count: " + this.list.length;
+};
+
+function Location(name) {
+
+    SessionCollection.call(this);
+
+    this.name = name;
+    this.id   = this.name + "_LOC";
+}
+
+/**
+ * Locations is a collection of Locations.
+ *
+ * This collection stores an instance of <code>Location</code>
+ * per location reported in the data.
+ *
+ * @type {Collection}
+ */
+Locations.prototype                   = new Collection();
+Locations.prototype.constructor       = Locations;
+Locations.prototype.toString          = function () {
+    return "Location count: " + this.size();
+};
+Locations.prototype.analyze           = function () {
+
+    this.all().forEach(function (location) {
+        location.analyze();
+    });
+};
+Locations.prototype.add               = function (location) {
+    Collection.prototype.add.call(this, location);
+    this.locationNames.push(location.name);
+};
+Locations.prototype.productsPresented = function () {
+
+    var products = 0;
+
+    for (var i = 0; i < this.size(); i++) {
+        products += this.at(i).productsPresented;
+    }
+
+    return products;
+};
+
+function Locations(sessions) {
+    // Name of locations reported in sessions
+    Collection.call(this);
+    this.locationNames = [];
+
+    for (var i = 0; i < sessions.size(); i++) {
+        var session = sessions.at(i);
+        var index   = this.find(session.location);
+
+        if (-1 == index) { // NEW
+            var location = new Location(session.location);
+            location.add(session);
+            this.add(location);
+        } else {
+            this.at(index).add(session);
+        }
+    }
+}
+
+/**
+ * Customers is a collection of Customer objects.
+ *
+ * @type {SessionCollection}
+ */
+Customers.prototype             = new SessionCollection();
+Customers.prototype.constructor = Customers;
+Customers.prototype.toString    = function () {
+    return "CUSTOMERS Count: " + this.size();
+};
+
+function Customers(sessions) {
+
+    SessionCollection.call(this);
+
+    for (var i = 0; i < sessions.size(); i++) {
+        var session = sessions.at(i);
+
+        if (!session.customer.isEmpty()) {
+            this.add(session);
+        }
+    }
+}
+
+/**
+ * AccountData holds all key Nihao objects.
+ * @param db Data to be processed
+ * @constructor Reads the data from <code>db</code> and processes it.
+ */
+var AccountData = function (db) {
+
+    this.emails = new Emails(db["Emails"]);
+    //this.sessions  = new Sessions(db["Sessions"]);
+
+    // Init sessions
+    this.sessions = new SessionCollection();
+    for (var i = 0; i < db["Sessions"].length; i++) {
+        this.sessions.add(new Session(db["Sessions"][i]));
+    }
+    this.sessions.analyze();
+
+    // Init locations
+    this.locations = new Locations(this.sessions);
+    this.locations.sort();
+    this.locations.analyze();
+
+    // Init customers
+    this.customers = new Customers(this.sessions, this.locations.size());
+    this.customers.analyze();
 
     this.periodLabels = GLOBAL_PERIODS;
     this.periodStats  = new Array(this.periodLabels.length);
 
-    /**
-     * Retrives the relevant stats from an object.
-     * @param periods
-     * @param metric
-     * @returns {Array}
+    this.sentiments = [];
+
+    this.analyze = function () {
+        this.periodStats = evaluatePeriods(this.sessions.all(), this.periodLabels, true);
+        evaluator.evaluate(this, this.locations.size());
+    };
+
+    /*
+     Gets total sessions for a relevant periods
      */
     this.getStats = function (periods, metric, metric_group) {
 
@@ -850,157 +947,21 @@ var Location = function (session) {
 
         for (var i = 0; i < periods.length; i++) {
 
-            var metricSum = 0;
+            var val = 0;
 
             for (var j = 0; j < this.periodStats.length; j++) {
                 if (this.periodStats[j][0] === periods[i] && this.periodStats[j][6] === metric_group) {
-                    metricSum += this.periodStats[j][metric];
+                    val += this.periodStats[j][metric];
                 }
             }
 
-            sessions.push(metricSum);
+            sessions.push(val);
         }
 
         return sessions;
     };
 
-    /**
-     * Updates the stats of the Location based on the reported session.
-     * @param session Session to process.
-     */
-    this.process = function (session) {
-
-        var Session = session;
-
-        // Add this session
-        this.sessions.push(session);
-
-        // Check to update associates
-        if (-1 === this.associates.indexOf(session.associate)) {
-            this.associates.push(session.associate);
-        }
-
-        // Check to update customer
-        var customerInArray = false;
-
-        for (var i = 0; i < this.customers.length; i++) {
-            if (this.customers[i].id === session.customer.id) {
-                customerInArray = true;
-            }
-        }
-
-        if (!customerInArray) {
-            this.customers.push(session.customer);
-        }
-
-        this.productsPresented += session.products;
-    };
-
-    /**
-     * Processes all session data assigned for this record.
-     * Assumes this.init(); was called.
-     */
-    this.analyse = function () {
-        this.periodStats = evaluatePeriods(this.sessions, this.periodLabels, true);
-    };
-
-    this.process(session);
-};
-
-var Locations = function (sessions) {
-
-    this.list = [];
-
-    this.locationNames = function () {
-        var names = [];
-
-        for (var i = 0 ; i < this.list.length ; i++) {
-            names.push(this.list[i].name.toUpperCase());
-        }
-
-        return names;
-    };
-
-    this.productsPresentedByLocation = function () {
-
-        var counts = [];
-
-        for (var i = 0 ; i < this.list.length ; i++) {
-            counts.push(this.list[i].productsPresented);
-        }
-
-        return counts;
-    };
-
-    this.length = function () {
-        return this.list.length;
-    };
-
-    this.all    = function () {
-        return this.list;
-    };
-
-    this.find = function (name) {
-
-        var location = {};
-
-        for (var i = 0; i < this.list.length; i++) {
-            var li = this.list[i];
-            if (li.name === name)
-                location = li;
-        }
-
-        return location;
-    };
-
-    this.sort = function () {
-        //this.list.sort(function(a,b) {return a.localeCompare(b);});
-        this.list.sort(function (a, b) {
-            return a.sessions.length < b.sessions.length;
-        });
-    };
-
-    this.init = function (sessions) {
-
-        for (var locIndex = 0; locIndex < sessions.length(); locIndex++) {
-
-            var session  = sessions.at(locIndex);
-            var location = this.find(session.location);
-
-            if (!isEmptyObject(location)) {         // UPDATE
-
-                location.process(session);
-
-            } else {                                // ADD NEW
-
-                this.list.push(new Location(session));
-
-            }
-        }
-    };
-
-    this.analyse = function () {
-
-        this.all().forEach(function (location) {
-            location.analyse();
-        });
-    };
-
-    this.productsPresented = function () {
-
-        var products = 0 ;
-
-        for (var i = 0 ; i < this.list.length ; i ++) {
-            products += this.list[i].productsPresented;
-        }
-
-        return products;
-
-    };
-
-    this.init(sessions);
-    this.sort();
-    this.analyse();
+    this.analyze();
 
 };
 

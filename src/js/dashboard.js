@@ -1,5 +1,5 @@
 /**
- * Created by itzhakadziashvili on 12/6/16.
+ * Created by Itzhak Adziashvili on 12/6/16.
  */
 
 /* GLOBAL VARIABLES */
@@ -10,7 +10,7 @@ var db;
 
 // HANDLERS
 
-function dashboardOnloadHandler() {
+function dashboardOnLoadHandler() {
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
 }
 
@@ -31,8 +31,9 @@ function handleFileSelect(evt) {
 
     var files = evt.target.files;
 
-    for (var i = 0, f; f = files[i]; i++) {
+    for (var i = 0, f; i< files.length; i++) {
 
+        f = files[i];
         var reader = new FileReader();
         fileName   = f.name;
 
@@ -44,7 +45,10 @@ function handleFileSelect(evt) {
             db       = to_json(wb);
 
             // Acknowledge to user processing ok.
-            var span = newElement("span", "fileOK", "glyphicon glyphicon-ok-circle", "FILE UPLOADED: " + fileName);
+            var span = newElement("span",
+                "fileOK",
+                "glyphicon glyphicon-ok-circle",
+                "FILE UPLOADED: " + fileName);
             document.getElementById('source').insertBefore(wrapElement(span, "span"), null);
 
             $("#process").click();
@@ -52,8 +56,6 @@ function handleFileSelect(evt) {
         };
 
         reader.readAsBinaryString(f);
-
-        break;
     }
 }
 
@@ -101,17 +103,15 @@ function wrapElement(e, withTag, sClass, id) {
 
 function daysBetween(first, second) {
 
-    var ONE_DAY  = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
-    var diffDays = Math.round(Math.abs((first.getTime() - second.getTime()) / (ONE_DAY)));
-
-    return diffDays;
+    var ONE_DAY = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+    return Math.round(Math.abs((first.getTime() - second.getTime()) / (ONE_DAY)));
 }
 
 function suffix(arr, suffix, space) {
 
     var result = [];
 
-    arr.forEach(function (item, index) {
+    arr.forEach(function (item) {
         result.push(item + (space ? " " : "") + suffix);
     });
 
@@ -165,14 +165,14 @@ function addListBadge(list, id, text, value, optional_style) {
     list.append(li);
 }
 
-function drawBarChart(chartCanvas, chartTitle, chartLables, chartData, barColors) {
+function drawBarChart(chartCanvas, chartTitle, chartLabels, chartData, barColors) {
 
     var ctx = document.getElementById(chartCanvas);
 
     var chartDataStructure = {
         type   : 'bar',
         data   : {
-            labels  : chartLables,
+            labels  : chartLabels,
             datasets: [{
                 label      : chartTitle,
                 data       : chartData,
@@ -194,12 +194,14 @@ function drawBarChart(chartCanvas, chartTitle, chartLables, chartData, barColors
         chartDataStructure.data.datasets[0].backgroundColor = barColors;
     }
 
+    //noinspection JSUnusedLocalSymbols
     var myChart = new Chart(ctx, chartDataStructure);
 }
 
+//noinspection JSUnusedGlobalSymbols
 function drawPolarChart(placeholder) {
 
-    ctx = document.getElementById(placeholder);
+    var ctx = document.getElementById(placeholder);
 
     var data = {
         datasets: [{
@@ -228,7 +230,8 @@ function drawPolarChart(placeholder) {
         ]
     };
 
-    var char = new Chart(ctx, {
+    //noinspection JSUnusedLocalSymbols
+    var chart = new Chart(ctx, {
         data   : data,
         type   : 'polarArea',
         options: {
@@ -240,13 +243,14 @@ function drawPolarChart(placeholder) {
 
 }
 
-function drawLineChart(chartCanvas, chartTitle, chartLables, chartData) {
+function drawLineChart(chartCanvas, chartTitle, chartLabels, chartData) {
 
     var ctx     = document.getElementById(chartCanvas);
+    //noinspection JSUnusedLocalSymbols
     var myChart = new Chart(ctx, {
         type   : 'line',
         data   : {
-            labels  : chartLables,
+            labels  : chartLabels,
             datasets: [{
                 label               : chartTitle,
                 data                : chartData,
@@ -270,33 +274,37 @@ function drawLineChart(chartCanvas, chartTitle, chartLables, chartData) {
     });
 }
 
-function drawDoughnutChart(chartCanvas, chartTitle, chartLables, chartData) {
+//noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
+function drawDoughnutChart(chartCanvas, chartTitle, chartLabels, chartData) {
 
     var ctx = document.getElementById(chartCanvas);
 
+    //noinspection JSUnusedLocalSymbols
     var myDoughnutChart = new Chart(ctx, {
         type     : 'doughnut',
         animation: {
             animateScale: true
         },
 
-        options : {
-            cutoutPercentage : 75
+        options: {
+            cutoutPercentage: 75
         },
 
-        data     : {
-            labels  : chartLables,
+        data: {
+            labels  : chartLabels,
             datasets: [{
                 data                : chartData,
                 borderWidth         : 0.5,
                 pointBackgroundColor: "rgba(64,204,255,0.4)"
             }]
-        }});
+        }
+    });
 }
 
 function drawBarChartSeries(chartCanvas, labels, series_a_title, series_a_data, series_b_labels, series_b_data) {
 
     var ctx     = document.getElementById(chartCanvas);
+    //noinspection JSUnusedLocalSymbols
     var myChart = new Chart(ctx, {
         type   : 'bar',
         data   : {
@@ -375,7 +383,7 @@ function buildLocationGrid(location) {
     rowData.setAttribute("class", "row");
     rowData.setAttribute("id", location.id + "_ROW_DATA_1");
 
-    for (i = 0; i < 3; i++) {
+    for (var i = 0; i < 3; i++) {
 
         var colData = document.createElement("div");
 
@@ -406,10 +414,10 @@ function addTitleSummary(ctx) {
     var title    = createElement("span");
     var sessions = account.sessions;
 
-    title.appendChild(createElement("h3", sessions.length().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " Sessions"));
+    title.appendChild(createElement("h3", sessions.size().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " Sessions"));
     title.appendChild(createElement("span", sessions.from.toDateString() + " - " + sessions.to.toDateString()));
     title.appendChild(createElement("br"));
-    title.appendChild(createElement("span", daysBetween(sessions.to, sessions.from) + " days usage data across " + account.locations.length() + " Locations"));
+    title.appendChild(createElement("span", daysBetween(sessions.to, sessions.from) + " days usage data across " + account.locations.size() + " Locations"));
 
     document.getElementById(ctx).appendChild(title);
 }
@@ -426,8 +434,9 @@ function addAccountSummarySection(placeholder, glyphicon, sectionTitle, sentimen
 
     document.getElementById(placeholder).appendChild(ctx);
 
-};
+}
 
+//noinspection JSUnusedLocalSymbols
 function addProductCharts(placeholder1, placeholder2) {
 
     var data   = [];

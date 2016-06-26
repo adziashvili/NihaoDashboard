@@ -19,7 +19,8 @@
     <script src="js/xlsx.js"></script>
     <script src="js/charts.js"></script>
 
-    <script src="js/nihao.js"></script>
+    <script src="js/nihao_utils.js"></script>
+    <script src="js/nihao_data.js"></script>
     <script src="js/dashboard.js"></script>
 
     <title>Nihao Analytics</title>
@@ -27,7 +28,7 @@
 </head>
 
 
-<body onload="dashboardOnloadHandler();">
+<body onload="dashboardOnLoadHandler();">
 
 <!-- MAIN HEADER MENU -->
 <nav class="navbar navbar-default">
@@ -248,7 +249,7 @@
                 $('#locations_listing'),
                 "locations_listing_all",
                 "SALES SESSIONS CONDUCTED",
-                account.sessions.length(),
+                account.sessions.size(),
                 "list-group-item-info"
         );
 
@@ -257,7 +258,7 @@
                     $('#locations_listing'),
                     "location_sessions" + index,
                     location.name,
-                    location.sessions.length);
+                    location.size());
         });
 
         // Adding summary Customers by location
@@ -265,7 +266,7 @@
                 $('#customer_listing'),
                 "customer_listing_all",
                 "CUSTOMER CONTACTS COLLECTED",
-                account.customers.length(),
+                account.customers.size(),
                 "list-group-item-info"
         );
 
