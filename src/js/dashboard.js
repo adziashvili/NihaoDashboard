@@ -9,7 +9,7 @@
 var accountInputData = {files: [], data: null};
 var account;
 
-GridElement.prototype             = new Object();
+GridElement.prototype             = {};
 GridElement.prototype.constructor = GridElement;
 GridElement.prototype.key         = function () {
     return this.id;
@@ -97,13 +97,13 @@ function dashboardOnLoadHandler() {
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
 }
 
-function onResetAll(){
-    
+function onResetAll() {
+
     gridManager.reset();
-    
+
     accountInputData.files = [];
-    accountInputData.data = null;
-    account = null;
+    accountInputData.data  = null;
+    account                = null;
 }
 
 // DATA PROCESSING
@@ -127,12 +127,12 @@ function handleFileSelect(evt) {
 
         f          = files[i];
         var reader = new FileReader();
-        accountInputData.files.push (f.name);
+        accountInputData.files.push(f.name);
 
         reader.onload = function (e) {
             // Read the file
-            var data              = e.target.result;
-            var wb                = XLSX.read(data, {type: 'binary'});
+            var data = e.target.result;
+            var wb   = XLSX.read(data, {type: 'binary'});
 
             accountInputData.data = to_json(wb);
 
@@ -344,9 +344,9 @@ function drawLineChart(gridChartElement, chartTitle, chartLabels, chartData) {
         gridChartElement :
         new GridChart(gridChartElement);
 
-    var ctx     = document.getElementById(gde.id);
+    var ctx   = document.getElementById(gde.id);
     //noinspection JSUnusedLocalSymbols
-    gde.chart =  new Chart(ctx, {
+    gde.chart = new Chart(ctx, {
         type   : 'line',
         data   : {
             labels  : chartLabels,
@@ -371,7 +371,6 @@ function drawLineChart(gridChartElement, chartTitle, chartLabels, chartData) {
             }
         }
     });
-
 
     gridManager.add(gde);
 }
