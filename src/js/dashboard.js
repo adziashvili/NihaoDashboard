@@ -2,16 +2,108 @@
  * Created by Itzhak Adziashvili on 12/6/16.
  */
 
-/* GLOBAL VARIABLES */
+/**
+ *  GLOBAL VARIABLES
+ */
 
-var fileName = "";
-var wb;
-var db;
+var accountInputData = {files: [], data: null};
+var account;
+
+GridElement.prototype             = new Object();
+GridElement.prototype.constructor = GridElement;
+GridElement.prototype.key         = function () {
+    return this.id;
+};
+GridElement.prototype.comparable  = function () {
+    return this.timeCreated.getMilliseconds();
+};
+GridElement.prototype.delete      = function () {
+
+    var element = document.getElementById(this.id);
+    element.parentNode.removeChild(element);
+};
+
+function GridElement(id) {
+
+    Object.call(this);
+    this.timeCreated = new Date();
+    this.id          = id;
+}
+
+GridPlaceHolder.prototype             = new GridElement();
+GridPlaceHolder.prototype.constructor = GridPlaceHolder;
+GridPlaceHolder.prototype.delete      = function () {
+
+    var element = document.getElementById(this.id);
+
+    while (element.childNodes.length > 0) {
+        element.removeChild(element.childNodes[0]);
+    }
+
+};
+
+function GridPlaceHolder(id) {
+
+    GridElement.call(this, id);
+}
+
+GridChart.prototype             = new GridElement();
+GridChart.prototype.constructor = GridChart;
+GridChart.prototype.delete      = function () {
+
+    if (this.chart !== undefined && this.chart !== null) {
+        this.chart.clear();
+        this.chart.destroy();
+        this.chart = null;
+    }
+
+    var element = document.getElementById(this.id);
+
+    if (null !== element) {
+        element.removeAttribute("height");
+        element.removeAttribute("width");
+        element.removeAttribute("style");
+    }
+};
+
+function GridChart(id, chartObj) {
+
+    GridElement.call(this, id);
+
+    this.chart = chartObj;
+
+}
+
+GridManager.prototype             = new Collection();
+GridManager.prototype.constructor = GridManager;
+GridManager.prototype.reset       = function () {
+
+    while (this.size() > 0) {
+        var eg = this.at(0);
+        this.remove(eg);
+        eg.delete();
+    }
+};
+
+function GridManager() {
+    Collection.call(this);
+}
+
+var gridManager = new GridManager();
 
 // HANDLERS
 
 function dashboardOnLoadHandler() {
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
+}
+
+function onResetAll(){
+    
+    gridManager.reset();
+    
+    accountInputData.files = [];
+    accountInputData.data = null;
+    account = null;
 }
 
 // DATA PROCESSING
@@ -31,25 +123,18 @@ function handleFileSelect(evt) {
 
     var files = evt.target.files;
 
-    for (var i = 0, f; i< files.length; i++) {
+    for (var i = 0, f; i < files.length; i++) {
 
-        f = files[i];
+        f          = files[i];
         var reader = new FileReader();
-        fileName   = f.name;
+        accountInputData.files.push (f.name);
 
         reader.onload = function (e) {
-
             // Read the file
-            var data = e.target.result;
-            wb       = XLSX.read(data, {type: 'binary'});
-            db       = to_json(wb);
+            var data              = e.target.result;
+            var wb                = XLSX.read(data, {type: 'binary'});
 
-            // Acknowledge to user processing ok.
-            var span = newElement("span",
-                "fileOK",
-                "glyphicon glyphicon-ok-circle",
-                "FILE UPLOADED: " + fileName);
-            document.getElementById('source').insertBefore(wrapElement(span, "span"), null);
+            accountInputData.data = to_json(wb);
 
             $("#process").click();
             $("#loadReport").trigger('click');
@@ -143,11 +228,14 @@ function getColors(values) {
 
 function addListBadge(list, id, text, value, optional_style) {
 
+    var ctxId = genRandomId();
+
     var li       = document.createElement('li');
     var badge    = document.createElement("span");
     var textSpan = document.createElement("span");
 
     li.setAttribute("class", "list-group-item" + " " + optional_style);
+    li.setAttribute("id", ctxId);
 
     if (typeof id !== 'undefined' && id !== "") {
         badge.setAttribute("id", id);
@@ -163,11 +251,18 @@ function addListBadge(list, id, text, value, optional_style) {
     li.insertBefore(badge, null);
 
     list.append(li);
+
+    // Adding this object to the grid manager for later cleanup
+    gridManager.add(new GridElement(ctxId));
 }
 
-function drawBarChart(chartCanvas, chartTitle, chartLabels, chartData, barColors) {
+function drawBarChart(gridChartElement, chartTitle, chartLabels, chartData, barColors) {
 
-    var ctx = document.getElementById(chartCanvas);
+    var gde = (gridChartElement instanceof GridChart) ?
+        gridChartElement :
+        new GridChart(gridChartElement);
+
+    var ctx = document.getElementById(gde.id);
 
     var chartDataStructure = {
         type   : 'bar',
@@ -194,8 +289,8 @@ function drawBarChart(chartCanvas, chartTitle, chartLabels, chartData, barColors
         chartDataStructure.data.datasets[0].backgroundColor = barColors;
     }
 
-    //noinspection JSUnusedLocalSymbols
-    var myChart = new Chart(ctx, chartDataStructure);
+    gde.chart = new Chart(ctx, chartDataStructure);
+    gridManager.add(gde);
 }
 
 //noinspection JSUnusedGlobalSymbols
@@ -243,11 +338,15 @@ function drawPolarChart(placeholder) {
 
 }
 
-function drawLineChart(chartCanvas, chartTitle, chartLabels, chartData) {
+function drawLineChart(gridChartElement, chartTitle, chartLabels, chartData) {
 
-    var ctx     = document.getElementById(chartCanvas);
+    var gde = (gridChartElement instanceof GridChart) ?
+        gridChartElement :
+        new GridChart(gridChartElement);
+
+    var ctx     = document.getElementById(gde.id);
     //noinspection JSUnusedLocalSymbols
-    var myChart = new Chart(ctx, {
+    gde.chart =  new Chart(ctx, {
         type   : 'line',
         data   : {
             labels  : chartLabels,
@@ -272,6 +371,9 @@ function drawLineChart(chartCanvas, chartTitle, chartLabels, chartData) {
             }
         }
     });
+
+
+    gridManager.add(gde);
 }
 
 //noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
@@ -301,11 +403,15 @@ function drawDoughnutChart(chartCanvas, chartTitle, chartLabels, chartData) {
     });
 }
 
-function drawBarChartSeries(chartCanvas, labels, series_a_title, series_a_data, series_b_labels, series_b_data) {
+function drawBarChartSeries(gridChartElement, labels, series_a_title, series_a_data, series_b_labels, series_b_data) {
 
-    var ctx     = document.getElementById(chartCanvas);
-    //noinspection JSUnusedLocalSymbols
-    var myChart = new Chart(ctx, {
+    var gde = (gridChartElement instanceof GridChart) ?
+        gridChartElement :
+        new GridChart(gridChartElement);
+
+    var ctx = document.getElementById(gridChartElement);
+
+    gde.chart = new Chart(ctx, {
         type   : 'bar',
         data   : {
             labels  : labels,
@@ -335,6 +441,8 @@ function drawBarChartSeries(chartCanvas, labels, series_a_title, series_a_data, 
             }
         }
     });
+
+    gridManager.add(gde);
 }
 
 // HTML DOCUMENT MANIPULATORS
@@ -407,6 +515,8 @@ function buildLocationGrid(location) {
     var top = document.getElementById("top_summary");
 
     top.parentNode.insertBefore(div, document.getElementById("myModal"));
+
+    gridManager.add(new GridElement(location.id));
 }
 
 function addTitleSummary(ctx) {
@@ -420,6 +530,7 @@ function addTitleSummary(ctx) {
     title.appendChild(createElement("span", daysBetween(sessions.to, sessions.from) + " days usage data across " + account.locations.size() + " Locations"));
 
     document.getElementById(ctx).appendChild(title);
+    gridManager.add(new GridPlaceHolder(ctx));
 }
 
 function addAccountSummarySection(placeholder, glyphicon, sectionTitle, sentiment, sentiment_class, performance_hint) {
@@ -433,11 +544,37 @@ function addAccountSummarySection(placeholder, glyphicon, sectionTitle, sentimen
     ctx.appendChild(wrapElement(newElement("span", "", "", performance_hint), "div"));
 
     document.getElementById(placeholder).appendChild(ctx);
-
+    gridManager.add(new GridPlaceHolder(placeholder));
 }
 
-//noinspection JSUnusedLocalSymbols
-function addProductCharts(placeholder1, placeholder2) {
+function addAccountSummary(placeholder) {
+
+    addAccountSummarySection(
+        placeholder,
+        "glyphicon-signal glyphicon-border-nihao",
+        "Usage",
+        account.sentiments[0][0],   // Sentiment
+        account.sentiments[0][1],   // Class
+        account.sentiments[0][2]);  // Hint
+
+    addAccountSummarySection(
+        placeholder,
+        "glyphicon-user glyphicon-border-nihao",
+        "Leads",
+        account.customers.sentiments[0][0],   // Sentiment
+        account.customers.sentiments[0][1],   // Class
+        account.customers.sentiments[0][2]);  // Hint
+
+    addAccountSummarySection(
+        placeholder,
+        "glyphicon-sunglasses glyphicon-border-nihao",
+        "Products",
+        account.sentiments[1][0],   // Sentiment
+        account.sentiments[1][1],   // Class
+        account.sentiments[1][2]);  // Hint
+}
+
+function addProductCharts(placeholder1) {
 
     var data   = [];
     var labels = [];
@@ -453,5 +590,4 @@ function addProductCharts(placeholder1, placeholder2) {
     var colors = getColors(data);
 
     drawBarChart(placeholder1, title, labels, data, colors);
-
 }

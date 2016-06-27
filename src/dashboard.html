@@ -63,6 +63,10 @@
 
             <span id="loadReport" class="btn btn-default hidden">PROCESS</span>
 
+            <a id="resetReport" href="#" class="btn btn-default hidden">
+                <span class="glyphicon glyphicon-remove-sign"></span> RESET
+            </a>
+
             <a href="#" class="btn btn-default"
                data-toggle="modal"
                data-target="#myModal">
@@ -190,41 +194,29 @@
 
 <script>
 
+    $('#resetReport').on('click', function () {
+        $('#showFeatures').addClass("hidden");
+        $('#resetReport').addClass("hidden");
+
+        onResetAll();
+    });
+
     $('#loadReport').on('click', function () {
 
         // Init the dashboard data
-        account = new AccountData(db);
+        account = new AccountData(accountInputData.data);
 
         // Adding Title
         addTitleSummary("summary_title_placeholder");
 
-        addAccountSummarySection(
-                "top_summary_headers",
-                "glyphicon-signal glyphicon-border-nihao",
-                "Usage",
-                account.sentiments[0][0],   // Sentiment
-                account.sentiments[0][1],   // Class
-                account.sentiments[0][2]);  // Hint
+        // Add account top line sentiments
+        addAccountSummary("top_summary_headers");
 
-        addAccountSummarySection(
-                "top_summary_headers",
-                "glyphicon-user glyphicon-border-nihao",
-                "Leads",
-                account.customers.sentiments[0][0],   // Sentiment
-                account.customers.sentiments[0][1],   // Class
-                account.customers.sentiments[0][2]);  // Hint
-
-        addAccountSummarySection(
-                "top_summary_headers",
-                "glyphicon-sunglasses glyphicon-border-nihao",
-                "Products",
-                account.sentiments[1][0],   // Sentiment
-                account.sentiments[1][1],   // Class
-                account.sentiments[1][2]);  // Hint
-
-        addProductCharts("product_usage_chart_left", "product_usage_chart_right");
+        // Adding product chart
+        addProductCharts("product_usage_chart_left");
         $('#showFeatures').removeClass("hidden");
 
+        // Adding location summary charts
         var periods = account.periodLabels.slice().reverse();
 
         drawLineChart("account_sessions_chart",
@@ -234,11 +226,13 @@
 
         periods = account.customers.periodLabels.slice().reverse();
 
+        // Adding Customer per Location Chart
         drawLineChart("account_customers_chart",
                 "Avg. Customers / Day",
                 suffix(periods, "d", true),
                 account.customers.getStats(periods, PERIOD_METRICS.AVG_T1, PERIOD_METRICS.GROUP_SESSION));
 
+        // Adding products presented per account
         drawLineChart("account_products_chart",
                 "Avg. Products Presented / Day",
                 suffix(periods, "d", true),
@@ -321,6 +315,8 @@
                     location.getStats(periods, PERIOD_METRICS.T1_TO_T0_CHANGE, PERIOD_METRICS.GROUP_SESSION));
 
         });
+
+        $('#resetReport').removeClass("hidden");
     });
 
 </script>

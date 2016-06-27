@@ -78,6 +78,10 @@ function assert(condition, message) {
     }
 }
 
+function genRandomId() {
+    return Math.random().toString(36).substring(7);
+}
+
 /**
  * Utility class to help manage collections easily.
  *
@@ -91,12 +95,15 @@ function Collection() {
 Collection.prototype.size     = function () {
     return this.list.length;
 };
+
 Collection.prototype.all      = function () {
     return this.list
 };
+
 Collection.prototype.at       = function (index) {
     return this.list[index];
 };
+
 Collection.prototype.find     = function (obj) {
 
     // Allows to search by OBJECT REF or by KEY Value
@@ -113,6 +120,7 @@ Collection.prototype.find     = function (obj) {
 
     return index;
 };
+
 Collection.prototype.add      = function (obj) {
 
     assert(undefined !== obj || null !== null, "Expecting value or object");
@@ -121,11 +129,13 @@ Collection.prototype.add      = function (obj) {
 
     if (-1 === this.find(obj.key())) this.list.push(obj);
 };
+
 Collection.prototype.removeAt = function (index) {
     if (index >= 0 && index < this.list.length) {
         this.list.splice(index, 1);
     }
 };
+
 Collection.prototype.remove   = function (obj) {
 
     var index = this.find(obj);
@@ -135,6 +145,7 @@ Collection.prototype.remove   = function (obj) {
     }
 
 };
+
 Collection.prototype.keys     = function () {
 
     var keys = [];
@@ -145,6 +156,7 @@ Collection.prototype.keys     = function () {
 
     return keys;
 };
+
 //noinspection JSUnusedGlobalSymbols
 Collection.prototype.calcStat = function (stats_func, filter_func) {
 

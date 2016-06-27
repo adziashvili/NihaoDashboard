@@ -3,11 +3,6 @@
  */
 
 /**
- * GLOBALS.
- */
-var account;
-
-/**
  * Periods to evaluate performance for
  * @type {number[]} The periods
  */
