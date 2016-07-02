@@ -30,21 +30,6 @@
 
 <body onload="dashboardOnLoadHandler();">
 
-<!-- MAIN HEADER MENU -->
-<nav class="navbar navbar-default">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="dashboard.html">DASHBOARD</a>
-        </div>
-        <ul class="nav navbar-nav">
-            <li class="active"><a href="#">ACCOUNT</a></li>
-            <li><a href="#">SALES</a></li>
-            <li><a href="#">CUSTOMERS</a></li>
-            <li><a href="#">PRODUCTS</a></li>
-        </ul>
-    </div>
-</nav>
-
 <!-- SUB-MENU -->
 <div id="btn_locations" class="container">
 
@@ -119,7 +104,7 @@
         </div>
     </div>
 
-    <!-- FEATURES USE GRAPH -->
+    <!-- NG_FEATURES USE GRAPH -->
     <div id="product_usage" class="row padd-bottom">
 
         <div class="col-lg-12">
@@ -317,6 +302,9 @@
         });
 
         $('#resetReport').removeClass("hidden");
+
+        localStorage.setItem("account",JSON.stringify(account));
+        localStorage.setItem("accountInputDate",JSON.stringify(accountInputData));
     });
 
 </script>

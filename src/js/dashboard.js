@@ -5,7 +5,6 @@
 /**
  *  GLOBAL VARIABLES
  */
-
 var accountInputData = {files: [], data: null};
 var account;
 
@@ -94,6 +93,7 @@ var gridManager = new GridManager();
 // HANDLERS
 
 function dashboardOnLoadHandler() {
+    addNavbar();
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
 }
 
@@ -142,306 +142,6 @@ function handleFileSelect(evt) {
 
         reader.readAsBinaryString(f);
     }
-}
-
-// HELPERS and UTILITIES
-
-function createElement(tag, innerHtml) {
-
-    var e = document.createElement(tag);
-    if (undefined !== innerHtml) {
-        e.innerHTML = innerHtml;
-    }
-
-    return e;
-}
-
-function newElement(tag, sClass, id, innerHtml) {
-
-    var e = document.createElement(tag);
-
-    if (id !== "" && id !== undefined && id !== null) {
-        e.setAttribute("id", id);
-    }
-
-    if (sClass !== "" && sClass !== undefined && sClass !== null) {
-        e.setAttribute("class", sClass);
-    }
-
-    if (innerHtml !== "" && innerHtml !== undefined && innerHtml !== null) {
-        e.innerHTML = innerHtml;
-    }
-
-    return e;
-}
-
-function wrapElement(e, withTag, sClass, id) {
-
-    var wrapper = newElement(withTag, sClass, id);
-
-    if (e !== undefined && e !== null) {
-        wrapper.appendChild(e);
-    }
-
-    return wrapper;
-}
-
-function daysBetween(first, second) {
-
-    var ONE_DAY = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
-    return Math.round(Math.abs((first.getTime() - second.getTime()) / (ONE_DAY)));
-}
-
-function suffix(arr, suffix, space) {
-
-    var result = [];
-
-    arr.forEach(function (item) {
-        result.push(item + (space ? " " : "") + suffix);
-    });
-
-    return result;
-}
-
-function getColors(values) {
-
-    var colors = [];
-
-    var RGB_OK      = "rgba(64,204,255,0.4)";
-    var RGB_WARNING = "rgba(138,109,59,0.4)";
-    var RGB_DANGER  = "rgba(169,68,66,0.4)";
-
-    for (var i = 0; i < values.length; i++) {
-        if (values[i] < 30) {
-            colors.push(RGB_DANGER);
-        } else if (values[i] < 60) {
-            colors.push(RGB_WARNING);
-        } else {
-            colors.push(RGB_OK);
-        }
-    }
-
-    return colors;
-}
-
-// DRAW CHARTS
-
-function addListBadge(list, id, text, value, optional_style) {
-
-    var ctxId = genRandomId();
-
-    var li       = document.createElement('li');
-    var badge    = document.createElement("span");
-    var textSpan = document.createElement("span");
-
-    li.setAttribute("class", "list-group-item" + " " + optional_style);
-    li.setAttribute("id", ctxId);
-
-    if (typeof id !== 'undefined' && id !== "") {
-        badge.setAttribute("id", id);
-    }
-
-    badge.setAttribute("class", "badge bg-color-nihao");
-    badge.innerHTML = value;
-
-    textSpan.setAttribute("class", "text-capitalize");
-    textSpan.innerHTML = text;
-
-    li.appendChild(textSpan);
-    li.insertBefore(badge, null);
-
-    list.append(li);
-
-    // Adding this object to the grid manager for later cleanup
-    gridManager.add(new GridElement(ctxId));
-}
-
-function drawBarChart(gridChartElement, chartTitle, chartLabels, chartData, barColors) {
-
-    var gde = (gridChartElement instanceof GridChart) ?
-        gridChartElement :
-        new GridChart(gridChartElement);
-
-    var ctx = document.getElementById(gde.id);
-
-    var chartDataStructure = {
-        type   : 'bar',
-        data   : {
-            labels  : chartLabels,
-            datasets: [{
-                label      : chartTitle,
-                data       : chartData,
-                borderWidth: 0.5
-            }]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
-    };
-
-    if (undefined !== barColors) {
-        chartDataStructure.data.datasets[0].backgroundColor = barColors;
-    }
-
-    gde.chart = new Chart(ctx, chartDataStructure);
-    gridManager.add(gde);
-}
-
-//noinspection JSUnusedGlobalSymbols
-function drawPolarChart(placeholder) {
-
-    var ctx = document.getElementById(placeholder);
-
-    var data = {
-        datasets: [{
-            data           : [
-                11,
-                16,
-                7,
-                3,
-                14
-            ],
-            backgroundColor: [
-                "#FF6384",
-                "#4BC0C0",
-                "#FFCE56",
-                "#E7E9ED",
-                "#36A2EB"
-            ],
-            label          : 'Feature Usage'
-        }],
-        labels  : [
-            "Red",
-            "Green",
-            "Yellow",
-            "Grey",
-            "Blue"
-        ]
-    };
-
-    //noinspection JSUnusedLocalSymbols
-    var chart = new Chart(ctx, {
-        data   : data,
-        type   : 'polarArea',
-        options: {
-            legend: {
-                display: false
-            }
-        }
-    });
-
-}
-
-function drawLineChart(gridChartElement, chartTitle, chartLabels, chartData) {
-
-    var gde = (gridChartElement instanceof GridChart) ?
-        gridChartElement :
-        new GridChart(gridChartElement);
-
-    var ctx   = document.getElementById(gde.id);
-    //noinspection JSUnusedLocalSymbols
-    gde.chart = new Chart(ctx, {
-        type   : 'line',
-        data   : {
-            labels  : chartLabels,
-            datasets: [{
-                label               : chartTitle,
-                data                : chartData,
-                borderWidth         : 0.5,
-                pointBackgroundColor: "rgba(64,204,255,0.4)",
-                pointBorderWidth    : 1,
-                pointRadius         : 5,
-                pointHoverRadius    : 10
-
-            }]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
-    });
-
-    gridManager.add(gde);
-}
-
-//noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
-function drawDoughnutChart(chartCanvas, chartTitle, chartLabels, chartData) {
-
-    var ctx = document.getElementById(chartCanvas);
-
-    //noinspection JSUnusedLocalSymbols
-    var myDoughnutChart = new Chart(ctx, {
-        type     : 'doughnut',
-        animation: {
-            animateScale: true
-        },
-
-        options: {
-            cutoutPercentage: 75
-        },
-
-        data: {
-            labels  : chartLabels,
-            datasets: [{
-                data                : chartData,
-                borderWidth         : 0.5,
-                pointBackgroundColor: "rgba(64,204,255,0.4)"
-            }]
-        }
-    });
-}
-
-function drawBarChartSeries(gridChartElement, labels, series_a_title, series_a_data, series_b_labels, series_b_data) {
-
-    var gde = (gridChartElement instanceof GridChart) ?
-        gridChartElement :
-        new GridChart(gridChartElement);
-
-    var ctx = document.getElementById(gridChartElement);
-
-    gde.chart = new Chart(ctx, {
-        type   : 'bar',
-        data   : {
-            labels  : labels,
-            datasets: [
-                {
-                    label      : series_a_title,
-                    data       : series_a_data,
-                    borderWidth: 0.5
-                },
-                {
-                    label               : series_b_labels,
-                    data                : series_b_data,
-                    backgroundColor     : "rgba(64,204,255,0.4)",
-                    hoverBackgroundColor: "rgba(64,204,255,0.7)",
-                    borderWidth         : 0.5
-                }
-            ]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
-    });
-
-    gridManager.add(gde);
 }
 
 // HTML DOCUMENT MANIPULATORS
@@ -532,7 +232,12 @@ function addTitleSummary(ctx) {
     gridManager.add(new GridPlaceHolder(ctx));
 }
 
-function addAccountSummarySection(placeholder, glyphicon, sectionTitle, sentiment, sentiment_class, performance_hint) {
+function addAccountSummarySection(placeholder,
+                                  glyphicon,
+                                  sectionTitle,
+                                  sentiment,
+                                  sentiment_class,
+                                  performance_hint) {
 
     var ctx = newElement("div", "col-lg-4 text-center");
 
@@ -573,20 +278,41 @@ function addAccountSummary(placeholder) {
         account.sentiments[1][2]);  // Hint
 }
 
-function addProductCharts(placeholder1) {
+function addProductCharts(placeholder) {
 
-    var data   = [];
-    var labels = [];
-    var title  = "Features use rate";
+    let datasets = account.sessions.analytics.getRatios([ngc.PERIOD_ALL, ngc.PERIODS[2], ngc.PERIODS[0]]);
 
-    var stats = account.sessions.stats.stats;
+    let display_datasets = [
+        {label: "Avg.", data: datasets[0]},
+        {label: "Last " + ngc.PERIODS[2] + " days", data: datasets[1]},
+        {label: "Last " + ngc.PERIODS[0] + " days", data: datasets[2]}
+    ];
 
-    for (var i = 0; i < stats.length; i++) {
-        labels.push(stats[i].name);
-        data.push(((stats[i].ratio) * 100.0).toFixed(2));
-    }
+    drawBarChartSeriesSets(placeholder, ngc.FEATURES, display_datasets);
+}
 
-    var colors = getColors(data);
+function addNavbar() {
+    let htmlPageName = location.pathname.substring(location.pathname.lastIndexOf("/") + 1);
 
-    drawBarChart(placeholder1, title, labels, data, colors);
+    let nav = newElement("nav", "navbar navbar-default");
+    let ctx = newElement("div", "container-fluid");
+    nav.appendChild(ctx);
+
+    // Building The Header
+    let navBrand = newElement("a", "navbar-brand", "", "DASHBOARD");
+    navBrand.setAttribute("href", "dashboard.html");
+    let navHeader = wrapElement(navBrand, "div", "navbar-header");
+    ctx.appendChild(navHeader);
+
+    let navbarList = newElement("ul", "nav navbar-nav");
+
+    let slsViewed = (htmlPageName.toLowerCase() === "sales.html") ? "active" : "";
+    let dshViewed = (htmlPageName.toLowerCase() === "dashboard.html") ? "active" : "";
+
+    navbarList.appendChild(wrapElement(newAnchor("dashboard.html", "HOME"), "li", dshViewed, "dashboard_li_id"));
+    navbarList.appendChild(wrapElement(newAnchor("sales.html", "SALES"), "li", slsViewed, "sales_li_id"));
+
+    ctx.appendChild(navbarList);
+
+    document.body.insertBefore(nav, document.body.firstChild);
 }

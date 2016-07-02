@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sales</title>
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="img/favicon-nihao.png">
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <script src="js/jq.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="js/jszip.js"></script>
+    <script src="js/xlsx.js"></script>
+    <script src="js/charts.js"></script>
+
+    <script src="js/dashboard.js"></script>
+    <script src="js/nihao_utils.js"></script>
+    <script src="js/nihao_data.js"></script>
+
+    <script>
+        var accountOb = JSON.parse(localStorage.getItem("account"));
+        let restored_sessions = [];
+
+        for (var i = 0 ; i < accountOb.sessions.list.length; i++) {
+            accountOb.sessions.list[i].date = new Date(accountOb.sessions.list[i].date);
+            restored_sessions.push(new Session(accountOb.sessions.list[i]));
+        }
+
+        accountOb.sessions = restored_sessions;
+        account = new AccountData(accountOb);
+    </script>
+
+</head>
+<body>
+
+<script>
+    addNavbar();
+</script>
+
+<!--
+
+- The list of products presented by order of popularity: Name, Times, % from sessions
+
+- Per product
+-- Presentation trends
+-- times first, second, third
+-- Number of customer details, list of customers with Buy / No Buy
+
+-->
+
+</body>
+</html>

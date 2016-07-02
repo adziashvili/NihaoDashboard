@@ -2,17 +2,40 @@
  * Created by itzhakadziashvili on 17/6/16.
  */
 
-/**
- * Periods to evaluate performance for
- * @type {number[]} The periods
- */
-var GLOBAL_PERIODS = [7, 15, 30, 60, 90];
+
+var Constants = function () {
+    /**
+     * Periods to evaluate performance for
+     * @type {number[]}
+     */
+    this.PERIODS = [7, 15, 30, 60, 90];
+
+    /**
+     * The set of features we calculate for various session sets.
+     * @type {string[]}
+     */
+    this.FEATURES = ["Brand Pages", "Collections", "Products", "Multi Products", "Translations", "Featured",
+        "Galleries", "Shopping Cart", "Associate", "Buy No Buy", "Audio", "Close - Timeout",
+        "Close - New", "Close - Settings", "Emails", "Multiple Emails", "Android", "iOS"];
+
+    /**
+     * Marks session stat as global that goes beyond a period.
+     * @type {number}
+     */
+    this.PERIOD_ALL = 0;
+
+    /**
+     * * Marks as specific session stat as global
+     * @type {number}
+     */
+    this.EVAL_REF_PERIOD = 3;
+};
 
 /**
- * Setting the period to compare period 0 against.
- * @type {number}
+ * Global variable to gold constants
+ * @type {Constants}
  */
-var EVALUATION_REF_PERIOD = 3;
+var ngc = new Constants();
 
 var PeriodMetrics = function () {
     this.TOTAL_T1        = 1;
@@ -122,7 +145,6 @@ function evaluatePeriod(arrayOfObjects, period, metricEval, bCompareToPrevious) 
         }
 
         changeRatio = (metricT0.metric === 0) ? 100 : (100 * ((metricT1.avg / metricT0.avg) - 1));
-
     }
 
     return [
@@ -220,7 +242,7 @@ var Evaluator = function () {
      * @param locCount
      * @returns {{hint: string, sentiment: *, sentimentClass: string}}
      */
-    this.evaluateSessionPerformance =  function (evalObj, evaluationPeriods, locCount) {
+    this.evaluateSessionPerformance = function (evalObj, evaluationPeriods, locCount) {
 
         var averages = evalObj.getStats(
             evaluationPeriods,
@@ -256,7 +278,7 @@ var Evaluator = function () {
         var sentiment      = growthScale.assessment;
         var sentimentClass = "";
 
-        hint = hint + diff.toFixed(1) + "% in last " + evalObj.periodLabels[EVALUATION_REF_PERIOD] + " days";
+        hint = hint + diff.toFixed(1) + "% in last " + evalObj.periodLabels[ngc.EVAL_REF_PERIOD] + " days";
 
         if (growthScale.normalised <= -2
             || (growthScale.normalised <= -1 && volumeScale.normalised <= 0)
@@ -288,7 +310,7 @@ var Evaluator = function () {
      * @param locCount
      * @returns {{hint: string, sentiment: string, sentimentClass: *}}
      */
-    this.evaluateProductPerformance =  function (evalObj, evaluationPeriods, locCount) {
+    this.evaluateProductPerformance = function (evalObj, evaluationPeriods, locCount) {
 
         var averages = evalObj.getStats(
             evaluationPeriods,
@@ -321,7 +343,7 @@ var Evaluator = function () {
 
         var sentimentClass = "";
 
-        hint = hint + diff.toFixed(1) + "% in last " + evalObj.periodLabels[EVALUATION_REF_PERIOD] + " days";
+        hint = hint + diff.toFixed(1) + "% in last " + evalObj.periodLabels[ngc.EVAL_REF_PERIOD] + " days";
 
         if (growthScale.normalised < 0) {
 
@@ -348,12 +370,12 @@ var Evaluator = function () {
     this.evaluate = function (evalObj, locCount) {
 
         // Safety
-        if (evalObj.periodLabels.length < EVALUATION_REF_PERIOD) {
+        if (evalObj.periodLabels.length < ngc.EVAL_REF_PERIOD) {
             return;
         }
 
         // Compare performance of period 0 to the reference period
-        var evaluationPeriods = [evalObj.periodLabels[0], evalObj.periodLabels[EVALUATION_REF_PERIOD]];
+        var evaluationPeriods = [evalObj.periodLabels[0], evalObj.periodLabels[ngc.EVAL_REF_PERIOD]];
 
         // 1. Evaluate session based performance
         var evaluation = this.evaluateSessionPerformance(evalObj, evaluationPeriods, locCount);
@@ -367,213 +389,300 @@ var Evaluator = function () {
 
 var evaluator = new Evaluator();
 
+function readValue(obj, arrPropName, objPropName) {
+
+    if (obj[arrPropName] !== undefined) {
+        return obj[arrPropName];
+    } else if (obj[objPropName] !== undefined) {
+        return obj[objPropName];
+    } else {
+        return "";
+    }
+}
+
+function readDate(obj, arrPropName, objPropName) {
+
+    if (obj[arrPropName] !== undefined) {
+        return new Date(obj[arrPropName]);
+    } else {
+        return obj[objPropName];
+    }
+}
+
 /* ---------------------------------------------------------------------------------------------
  Data Objects
-/* --------------------------------------------------------------------------------------------- */
+ /* --------------------------------------------------------------------------------------------- */
+
+/**
+ * An object to hold specific calculations for a given set of sessions
+ * @type {{}}
+ */
+Stats.prototype = {};
+Stats.constructor = Stats;
+function Stats(name) {
+    this.name        = name;
+    this.total       = 0;
+    this.totalPrev   = 0;
+    this.ratio       = 0;
+    this.ratioPrev   = 0;
+    this.ratioChange = 0;
+}
+
+/**
+ * SessionStats holds the stats for a given set of sessions.
+ * @type {{}}
+ */
+SessionStats.prototype = {};
+SessionStats.prototype.constructor     = SessionStats;
+SessionStats.prototype.indexOf         = function (feature) {
+
+    var index = -1;
+
+    for (var i = 0; i < this.stats.length; i++) {
+        if (feature === this.stats[i].name) {
+            index = i;
+            break;
+        }
+    }
+
+    return index;
+};
+SessionStats.prototype.find            = function (feature) {
+    let index = this.indexOf(feature);
+    let res   = null;
+
+    if (index !== -1) {
+        res = this.stats[index];
+    }
+
+    return res;
+};
+SessionStats.prototype.inc             = function (feature) {
+
+    var index = this.indexOf(feature);
+
+    if (-1 !== index) {
+        this.stats[index].total++;
+    }
+};
+SessionStats.prototype.incIf           = function (feature, bIfCondition) {
+    if (bIfCondition) {
+        this.inc(feature);
+    }
+};
+//noinspection JSUnusedGlobalSymbols
+SessionStats.prototype.getFeatureRatio = function (feature) {
+
+    var ratio = 0;
+    var index = this.indexOf(feature);
+
+    if (-1 !== index) {
+        ratio = this.stats[index].ratio;
+    }
+
+    return ratio;
+};
+SessionStats.prototype.getRatios       = function () {
+
+    let ratios = [];
+
+    for (let i = 0; i < ngc.FEATURES.length; i++) {
+        ratios.push(this.getFeatureRatio(ngc.FEATURES[i]));
+    }
+};
+SessionStats.prototype.setPrevious     = function (prevStats) {
+
+    for (let i = 0; i < ngc.FEATURES.length; i++) {
+        let feature     = this.find(ngc.FEATURES[i]);
+        let featurePrev = prevStats.find(ngc.FEATURES[i]);
+
+        if (feature !== null && featurePrev !== null) {
+            feature.totalPrev   = featurePrev.total;
+            feature.ratioPrev   = featurePrev.ratio;
+            feature.ratioChange = feature.ratio / feature.ratioPrev;
+        }
+    }
+};
+SessionStats.prototype.init            = function (sessions) {
+
+    for (var i = 0; i < sessions.length; i++) {
+
+        var session = sessions[i];
+
+        this.incIf("Brand Pages", session.pages > 0);
+        this.incIf("Collections", session.collections > 0);
+        this.incIf("Products", session.products > 0);
+        this.incIf("Multi Products", session.products > 1);
+        this.incIf("Translations", session.languages > 1);
+        this.incIf("Featured", session.featured > 1);
+        this.incIf("Galleries", session.gallery > 0);
+        this.incIf("Shopping Cart", session.shoppingCart > 0);
+        this.incIf("Associate", session.associate !== "" && session.associate !== "Other");
+        this.incIf("Buy No Buy", session.buy !== "");
+        this.incIf("Audio", session.audio);
+        this.incIf("Close - Settings", session.closureEvent === "Settings");
+        this.incIf("Close - Timeout", session.closureEvent === "Timeout - No Response");
+        this.incIf("Close - New", session.closureEvent === "New Session"
+            || session.closureEvent === "Timeout - Start New Response");
+        this.incIf("Emails", session.emailsSent > 0);
+        this.incIf("Multiple Emails", session.emailsSent > 1);
+        this.incIf("Android", session.os === "Android");
+        this.incIf("iOS", session.os === "iOS");
+    }
+
+    for (let j = 0; j < this.stats.length; j++) {
+        this.stats[j].ratio = this.stats[j].total / sessions.length;
+    }
+};
 
 /**
  *
  * @param sessions
+ * @param period
  * @constructor
  */
-var SessionStats = function (sessions) {
+function SessionStats(sessions, period) {
 
-    this.stats =
-        [
-            {name: "Brand Pages", total: 0, ratio: 0},
-            {name: "Collections", total: 0, ratio: 0},
-            {name: "Products", total: 0, ratio: 0},
-            {name: "Multi Products", total: 0, ratio: 0},
-            {name: "Translations", total: 0, ratio: 0},
-            {name: "Featured", total: 0, ratio: 0},
-            {name: "Galleries", total: 0, ratio: 0},
-            {name: "Shopping Cart", total: 0, ratio: 0},
-            {name: "Associate", total: 0, ratio: 0},
-            {name: "Buy No Buy", total: 0, ratio: 0},
-            {name: "Audio", total: 0, ratio: 0},
-            {name: "Close - Timeout", total: 0, ratio: 0},
-            {name: "Close - New", total: 0, ratio: 0},
-            {name: "Close - Settings", total: 0, ratio: 0},
-            {name: "Emails", total: 0, ratio: 0},
-            {name: "Multiple Emails", total: 0, ratio: 0},
-            {name: "Android", total: 0, ratio: 0},
-            {name: "iOS", total: 0, ratio: 0}
-        ];
+    this.period = (period !== undefined) ? period : ngc.PERIOD_ALL;
+    this.stats  = [];
 
-    /**
-     *
-     * @param feature
-     */
-    this.incrementTotal = function (feature) {
-
-        var index = -1;
-
-        for (var i = 0; i < this.stats.length; i++) {
-            if (feature === this.stats[i].name) {
-                index = i;
-                break;
-            }
-        }
-
-        if (-1 !== index) {
-            this.stats[index].total++;
-        }
-    };
-
-    //noinspection JSUnusedGlobalSymbols
-    /**
-     *
-     * @param feature
-     */
-    this.getFeatureRatio = function (feature) {
-
-        var ratio =0;
-        var index = -1;
-
-        for (var i = 0; i < this.stats.length; i++) {
-            if (feature === this.stats[i].name) {
-                index = i;
-                break;
-            }
-        }
-
-        if (-1 !== index) {
-            ratio = this.stats[index].ratio;
-        }
-
-        return ratio;
-    };
-
-    /**
-     *
-     * @param sessions
-     */
-
-    this.init = function (sessions) {
-
-        for (var i = 0; i < sessions.length; i++) {
-
-            var session = sessions[i];
-
-            if (session.pages > 0) {
-                this.incrementTotal("Brand Pages");
-            }
-
-            if (session.collections > 0) {
-                this.incrementTotal("Collections");
-            }
-
-            if (session.products > 0) {
-                this.incrementTotal("Products");
-            }
-
-            if (session.products > 1) {
-                this.incrementTotal("Multi Products");
-            }
-
-            if (session.languages > 1) {
-                this.incrementTotal("Translations");
-            }
-
-            if (session.featured > 0) {
-                this.incrementTotal("Featured");
-            }
-
-            if (session.gallery > 0) {
-                this.incrementTotal("Galleries");
-            }
-
-            if (session.shopingCart > 0) {
-                this.incrementTotal("Shopping Cart");
-            }
-
-            if (session.associate !== "" && session.associate !== "Other") {
-                this.incrementTotal("Associate");
-            }
-
-            if (session.buy !== "") {
-                this.incrementTotal("Buy No Buy");
-            }
-
-            if (session.audio) {
-                this.incrementTotal("Audio");
-            }
-
-            if (session.closureEvent === "Settings") {
-                this.incrementTotal("Close - Settings");
-            }
-
-            if (session.closureEvent === "Timeout - No Response") {
-                this.incrementTotal("Close - Timeout");
-            }
-
-            if (session.closureEvent === "New Session"
-                || session.closureEvent === "Timeout - Start New Response") {
-                this.incrementTotal("Close - New");
-            }
-
-            if (session.emailsSent > 0) {
-                this.incrementTotal("Emails");
-            }
-
-            if (session.emailsSent > 1) {
-                this.incrementTotal("Multiple Emails");
-            }
-
-            if (session.os === "Android") {
-                this.incrementTotal("Android");
-            }
-
-            if (session.os === "iOS") {
-                this.incrementTotal("iOS");
-            }
-        }
-
-        var totalSessions = sessions.length;
-
-        for (var j = 0; j < this.stats.length; j++) {
-            this.stats[j].ratio = this.stats[j].total / totalSessions;
-        }
-
-    };
+    for (let i = 0; i < ngc.FEATURES.length; i++) {
+        this.stats.push(new Stats(ngc.FEATURES[i]));
+    }
 
     this.init(sessions)
+}
+
+/**
+ * Session Analytics Manager
+ * @type {{}}
+ */
+SessionsAnalyticsManager.prototype = {};
+SessionsAnalyticsManager.constructor             = SessionsAnalyticsManager;
+//noinspection JSUnusedGlobalSymbols
+SessionsAnalyticsManager.prototype.getStats      = function (optional_period) {
+
+    optional_period = (optional_period !== undefined) ? optional_period : ngc.PERIOD_ALL;
+    let res_stats   = this.sessionStats.filter(function (obj) {
+        return obj.period === optional_period;
+    });
+
+    return res_stats[0];
 };
+SessionsAnalyticsManager.prototype.analyzePeriod = function (period) {
+
+    let today = new Date();
+
+    let tmpSessions = this.sessions.filter(function (session) {
+        return daysBetween(today, session.date) <= period;
+    });
+
+    let tmpStats = new SessionStats(tmpSessions, period);
+
+    if (this.bCompareToPrevious) {
+
+        tmpSessions = this.sessions.filter(function (session) {
+            return daysBetween(today, session.date) > period &&
+                daysBetween(today, session.date) <= 2 * period;
+        });
+
+        tmpStats.setPrevious(new SessionStats(tmpSessions, period));
+    }
+
+    this.sessionStats.push(tmpStats);
+};
+SessionsAnalyticsManager.prototype.analyze       = function () {
+
+    this.sessionStats.push(new SessionStats(this.sessions));
+
+    for (let i = 0; i < this.periods.length; i++) {
+        this.analyzePeriod(this.periods[i]);
+    }
+};
+SessionsAnalyticsManager.prototype.getRatios     = function (periods) {
+
+    let data = [];
+
+    for (let i = 0; i < periods.length; i++) {
+
+        let currentPeriodStat = this.getStats(periods[i]);
+        let period_data           = [];
+
+        for (let j = 0; j < ngc.FEATURES.length; j++) {
+            period_data.push(currentPeriodStat.getFeatureRatio(ngc.FEATURES[j]).toFixed(2));
+        }
+
+        data.push(period_data);
+    }
+
+    return data;
+};
+
+/**
+ * Calculates the metrics for a given set of sessions.
+ * @param sessions a Set of sessions to analyze
+ * @param periods An array of periods to process
+ * @param bCompareToPrevious Indicator to process a comparison period
+ * @constructor
+ */
+function SessionsAnalyticsManager(sessions, periods, bCompareToPrevious) {
+
+    this.sessions           = sessions;
+    this.periods            = periods;
+    this.sessionStats       = [];
+    this.sentiments         = [];
+    this.bCompareToPrevious = bCompareToPrevious;
+
+    this.analyze();
+}
 
 var Session = function (session) {
 
-    this.id          = session["Session ID"];
-    this.location    = session["Location"];
-    this.date        = new Date(session["Date / Time"]);
-    this.duration    = session["Session Duration (min)"] * 1.0;
+    this.id          = readValue(session, "Session ID", "id");
+    this.location    = readValue(session, "Location", "location");
+    this.date        = readDate(session, "Date / Time", "date");
+    this.duration    = readValue(session, "Session Duration (min)", "duration") * 1.0;
     //noinspection JSUnusedGlobalSymbols
-    this.netDuration = session["Net Presentation Time (min)"] * 1.0;
-    this.associate   = session["Sales Associate"];
-    this.customer    = new Customer(session);
+    this.netDuration = readValue(session, "Net Presentation Time (min)", "netDuration") * 1.0;
+    this.associate   = readValue(session, "Sales Associate", "associate");
 
-    this.topProducts = new Array(3);
-    this.topProducts.push(session["Top product 1"]);
-    this.topProducts.push(session["Top product 2"]);
-    this.topProducts.push(session["Top product 3"]);
+    this.customer = new Customer(session);
 
-    this.emails = session["Emails"] === "" ? [] : session["Emails"].slice(",");
+    if (session.topProducts !== "" && session.topProducts !== undefined) {
+        this.topProducts = session.topProducts;
+    } else {
+        this.topProducts = new Array(3);
+        this.topProducts.push(session["Top product 1"]);
+        this.topProducts.push(session["Top product 2"]);
+        this.topProducts.push(session["Top product 3"]);
+    }
 
-    this.pages        = 1.0 * session["Number of unique storyline pages presented"];
-    this.collections  = 1.0 * session["Number of unique collection presented"];
-    this.products     = 1.0 * session["Number of unique products presented"];
-    this.languages    = 1.0 * session["Number of languages used"];
-    this.featured     = 1.0 * session["Number of feature page opening"];
-    this.gallery      = 1.0 * session["Number of gallery page opening"];
-    this.shopingCart  = 1.0 * session["Products in shopping cart"];
-    this.buy          = session["Buy?"];
-    this.audio        = session["Audio used"] === "YES";
-    this.closureEvent = session["Ended Due To"];
-    this.emailsSent   = this.emails.length;
+    if (session.emails !== "" && session.emails !== undefined) {
+        this.emails = session.emails;
+    } else {
+        this.emails = (session["Emails"] === "" || session["Emails"] === undefined) ?
+            [] : session["Emails"].slice(",");
+    }
+
+    this.pages        = 1.0 * readValue(session, "Number of unique storyline pages presented", "pages");
+    this.collections  = 1.0 * readValue(session, "Number of unique collection presented", "collections");
+    this.products     = 1.0 * readValue(session, "Number of unique products presented", "products");
+    this.languages    = 1.0 * readValue(session, "Number of languages used", "languages");
+    this.featured     = 1.0 * readValue(session, "Number of feature page opening", "featured");
+    this.gallery      = 1.0 * readValue(session, "Number of gallery page opening", "gallery");
+    this.shoppingCart = 1.0 * readValue(session, "Products in shopping cart", "shoppingCart");
+    this.buy          = readValue(session, "Buy?", "buy");
+    this.audio        = (session.audio !== undefined) ? session.audio : session["Audio used"] === "YES";
+    this.closureEvent = readValue(session, "Ended Due To", "closureEvent");
+
+    this.emailsSent = this.emails.length;
+
     //noinspection JSUnusedGlobalSymbols
-    this.deviceId     = session["Device ID"];
-    this.os           = session["Device OS"];
+    this.deviceId = readValue(session, "Device ID", "deviceId");
+    this.os       = readValue(session, "Device OS", "os");
+
     //noinspection JSUnusedGlobalSymbols
-    this.model        = session["Device Model"];
+    this.model = readValue(session, "Device Model", "model");
 
     this.equals = function (another) {
         return this.key() === another.key();
@@ -588,39 +697,43 @@ var Session = function (session) {
     };
 
     this.toString = function () {
-        return "Session Id:" + this.key();
+        return "Session Id:" + this.key() + (!this.customer.isEmpty() ? "Customer: " + this.customer.toString() : " No customer details");
     };
 };
 
 var Customer = function (session) {
 
-    if (undefined === session) {
-        console.log("ERROR: Expecting valid input. raw_data is undefined.");
-        return {};
-    }
+    var sourceObject = (session.customer !== undefined) ? session.customer : session;
 
-    this.date     = new Date(session["Date / Time"]);
-    this.location = new Date(session["Location"]);
+    this.date     = readDate(sourceObject, "Date / Time", "date");
+    this.location = readValue(sourceObject, "Location", "location");
 
-    this.name    = session["Customer Name"];
-    this.email   = session["Customer Email"];
-    this.contact = session["Customer Contact"];
+    this.name    = readValue(sourceObject, "Customer Name", "name");
+    this.email   = readValue(sourceObject, "Customer Email", "email");
+    this.contact = readValue(sourceObject, "Customer Contact", "contact");
 
     this.id = this.name + this.email + this.contact;
 
     //noinspection JSUnusedGlobalSymbols
     this.contactable = false; // session["Customer Wiling To Be Contacted"];
+
     //noinspection JSUnusedGlobalSymbols
-    this.gender      = session["Customer Gender"];
+    this.gender = readValue(sourceObject, "Customer Gender", "gender");
+
     //noinspection JSUnusedGlobalSymbols
-    this.city        = session["Customer Location"];
-    if (session["Customer DOB"] !== "") {
+    this.city = readValue(sourceObject, "Customer Location", "city");
+
+    if (sourceObject.dob !== undefined) {
+        this.dob = sourceObject.dob;
+    } else if (sourceObject["Customer DOB"] !== "") {
         //noinspection JSUnusedGlobalSymbols
-        this.dob = new Date(session["Customer DOB"]);
+        this.dob = new Date(sourceObject["Customer DOB"]);
     }
-    this.language = session["Customer Primary Language"];
+
+    this.language = readValue(sourceObject, "Customer Primary Language", "language");
+
     //noinspection JSUnusedGlobalSymbols
-    this.rating   = session["Customer Rating"] * 1;
+    this.rating = 1 * readValue(sourceObject, "Customer Rating", "rating");
 
     this.isEmpty = function () {
         return this.name === "" && this.email === "" && this.contact === "";
@@ -644,7 +757,8 @@ var Customer = function (session) {
 };
 
 //noinspection JSUnusedGlobalSymbols
-var Email = function () {};
+var Email = function () {
+};
 
 /* ---------------------------------------------------------------------------------------------
  Collections
@@ -713,9 +827,12 @@ SessionCollection.prototype.toString = function () {
     return "SessionCollection: size =" + this.size() + " Earliest:" + this.from + " Latest: " + this.to;
 };
 SessionCollection.prototype.analyze  = function () {
+
     this.periodStats = evaluatePeriods(this.all(), this.periodLabels, true);
-    this.stats = new SessionStats(this.all());
+    this.stats       = new SessionStats(this.all());
     evaluator.evaluate(this, this.locationNames.length);
+
+    this.analytics = new SessionsAnalyticsManager(this.all(), this.periodLabels, true);
 };
 SessionCollection.prototype.add      = function (session) {
 
@@ -769,7 +886,7 @@ function SessionCollection() {
 
     Collection.call(this);
 
-    this.periodLabels = GLOBAL_PERIODS;
+    this.periodLabels = ngc.PERIODS;
     this.sentiments   = [];
     this.periodStats  = new Array(this.periodLabels.length);
 
@@ -793,6 +910,9 @@ function SessionCollection() {
 
     // Stats object
     this.stats = new SessionStats(this.list);
+
+    // Analytics
+    this.analytics = {};
 }
 
 /**
@@ -828,16 +948,10 @@ function Location(name) {
  *
  * @type {Collection}
  */
-Locations.prototype                   = new Collection();
+Locations.prototype = new Collection();
 Locations.prototype.constructor       = Locations;
 Locations.prototype.toString          = function () {
     return "Location count: " + this.size();
-};
-Locations.prototype.analyze           = function () {
-
-    this.all().forEach(function (location) {
-        location.analyze();
-    });
 };
 Locations.prototype.add               = function (location) {
     Collection.prototype.add.call(this, location);
@@ -852,6 +966,12 @@ Locations.prototype.productsPresented = function () {
     }
 
     return products;
+};
+Locations.prototype.analyze           = function () {
+
+    this.all().forEach(function (location) {
+        location.analyze();
+    });
 };
 
 function Locations(sessions) {
@@ -878,7 +998,7 @@ function Locations(sessions) {
  *
  * @type {SessionCollection}
  */
-Customers.prototype             = new SessionCollection();
+Customers.prototype = new SessionCollection();
 Customers.prototype.constructor = Customers;
 Customers.prototype.toString    = function () {
     return "CUSTOMERS Count: " + this.size();
@@ -905,12 +1025,23 @@ function Customers(sessions) {
 var AccountData = function (db) {
 
     this.emails = new Emails(db["Emails"]);
-    //this.sessions  = new Sessions(db["Sessions"]);
 
     // Init sessions
     this.sessions = new SessionCollection();
-    for (var i = 0; i < db["Sessions"].length; i++) {
-        this.sessions.add(new Session(db["Sessions"][i]));
+
+    let tmp_sessions      = [];
+    let b_create_sessions = false;
+
+    if (db["Sessions"] !== undefined) {
+        b_create_sessions = true;
+        tmp_sessions      = db["Sessions"];
+    } else {
+        b_create_sessions = false;
+        tmp_sessions      = db.sessions;
+    }
+
+    for (let i = 0; i < tmp_sessions.length; i++) {
+        this.sessions.add(b_create_sessions ? new Session(tmp_sessions[i]) : tmp_sessions[i]);
     }
     this.sessions.analyze();
 
@@ -923,7 +1054,7 @@ var AccountData = function (db) {
     this.customers = new Customers(this.sessions, this.locations.size());
     this.customers.analyze();
 
-    this.periodLabels = GLOBAL_PERIODS;
+    this.periodLabels = ngc.PERIODS;
     this.periodStats  = new Array(this.periodLabels.length);
 
     this.sentiments = [];
